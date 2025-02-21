@@ -23,7 +23,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: xiangfa/talk-with-gemini
+          images: hulu365/talk
           tags: |
             type=raw,value=latest
             type=ref,event=tag
