@@ -1,5 +1,13 @@
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai'
-import type { InlineDataPart, ModelParams, Tool, ToolConfig, Part, SafetySetting } from '@google/generative-ai'
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@xiangfa/generative-ai'
+import type {
+  InlineDataPart,
+  ModelParams,
+  Tool,
+  ToolConfig,
+  Part,
+  SafetySetting,
+  GenerationConfig,
+} from '@xiangfa/generative-ai'
 import { getVisionPrompt, getFunctionCallPrompt } from '@/utils/prompt'
 import { hasUploadFiles, getRandomKey } from '@/utils/common'
 import { OldVisionModel, DefaultModel } from '@/constant/model'
@@ -57,7 +65,9 @@ export function getSafetySettings(level: string) {
 }
 
 function canUseSearchAsTool(model: string) {
-  return model.startsWith('gemini-2.0') && !model.includes('lite') && !model.includes('thinking')
+  return (
+    model.startsWith('gemini-2.0') && !model.includes('lite') && !model.includes('thinking') && !model.includes('image')
+  )
 }
 
 export default async function chat({
@@ -88,7 +98,13 @@ export default async function chat({
       messages = [...systemInstructionMessages, ...messages]
     }
   }
-  if (tools && !OldVisionModel.includes(model)) {
+  if (
+    tools &&
+    !OldVisionModel.includes(model) &&
+    !model.includes('lite') &&
+    !model.includes('thinking') &&
+    !model.includes('image')
+  ) {
     const toolPrompt = getFunctionCallPrompt()
     modelParams.tools = tools
     modelParams.systemInstruction = modelParams.systemInstruction
@@ -120,6 +136,9 @@ export default async function chat({
       })
       modelParams.safetySettings = safetySettings
     }
+  }
+  if (model.startsWith('gemini-2.0-flash-exp-image-generation') && modelParams.generationConfig) {
+    modelParams.generationConfig.responseModalities = ['Text', 'Image']
   }
   const geminiModel = genAI.getGenerativeModel(modelParams, { baseUrl })
   const message = messages.pop()
